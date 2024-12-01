@@ -23,6 +23,7 @@ class FileDirectory:
         
         :param file_path: str - Directory path used to determine all files in a folder."""
         self.directory_path = file_path
+        self.file_dict = {}
 
     @property
     def directory_path(self):
@@ -44,3 +45,15 @@ class FileDirectory:
         if not os.path.isdir(value):
             raise InvalidDirectoryPath
         self._directory_path = value
+
+    # ================ Normal Functions
+
+    def read_file_list(self) -> None:
+        """When the directory path is initialized, 
+           read every file in the path and store them in a list."""
+        # Checks to make sure directory is active.
+        if not os.path.isdir(self.directory_path):
+            raise InvalidDirectoryPath
+        # Dict comprehension to read each file/folder in a directory
+        # Key and value will be the same, value changed when prefixing and the like.
+        self.file_dict = {file: file for file in os.listdir(self.directory_path)}
