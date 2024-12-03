@@ -22,3 +22,7 @@ class InvalidDirectoryPath(Exception):
 class NoDirectoryPath(Exception):
     """There is no directory path available."""
     pass
+
+class MissingFileError(Exception):
+    """A file was missing from the directory path."""
+    pass

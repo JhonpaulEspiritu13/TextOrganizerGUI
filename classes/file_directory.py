@@ -25,6 +25,8 @@ class FileDirectory:
         self.directory_path = file_path
         self.file_dict = {}
 
+    # ================ Properties
+
     @property
     def directory_path(self):
         """Directory path referenced for files."""
@@ -46,6 +48,23 @@ class FileDirectory:
             raise InvalidDirectoryPath
         self._directory_path = value
 
+    # ================ Private Functions
+
+    def _error_check(self, errors) -> None:
+        """Handle error checking, where "ignore" passes while "raise" causes an error.
+        
+        :param errors: The option to check the error."""
+        # CONSTANTS
+        IGNORE = "ignore"
+        RAISE = "raise"
+
+        if errors == IGNORE:
+            return
+        elif errors == RAISE:
+            raise MissingFileError
+        else:
+            raise ValueError
+
     # ================ Normal Functions
 
     def read_file_list(self) -> None:
@@ -57,3 +76,27 @@ class FileDirectory:
         # Dict comprehension to read each file/folder in a directory
         # Key and value will be the same, value changed when prefixing and the like.
         self.file_dict = {file: file for file in os.listdir(self.directory_path)}
+
+    def get_file_values(self, errors = "raise"):
+        """Gets the file dictionary values and returns a tuple of two lists:
+           directories and files.
+           
+           :param errors: Default to raise. "ignore" passes missing files. "raise" causes error.
+           :return: Tuple of two lists."""
+        # Return Lists
+        directories, files = [], []
+
+        # Iterate through dictionary
+        for file in self.file_dict.values():
+            # File path to check
+            path = os.path.join(self.directory_path, file)
+            # If file path is directory or file. Note: Does not append path itself.
+            if os.path.isdir(path):
+                directories.append(file)
+            elif os.path.isfile(path):
+                files.append(file)
+            # File was not found
+            else:
+                self._error_check(errors)
+
+        return directories, files

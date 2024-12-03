@@ -13,6 +13,7 @@
 
 # Imports
 import tkinter as tk
+import tkinter.ttk as tkk
 from tkinter import filedialog
 # Classes
 from classes.exceptions import *
@@ -41,16 +42,26 @@ class TextOrganizerGUI(tk.Tk):
         self.menu_bar = tk.Menu(self)
         self.config(menu=self.menu_bar)
         # Label Frames
-        self.directory_frame = tk.LabelFrame(self, width=200, height=300, text="Directory Explorer")
+        self.directory_frame = tk.LabelFrame(self, width=200, height=320, text="File Explorer")
         self.directory_frame.grid(row=1, column=0)
-        self.button_frame = tk.LabelFrame(self, width=130, height=300, text="Command List")
+        self.button_frame = tk.LabelFrame(self, width=130, height=355, text="Command List")
         self.button_frame.grid_propagate(False)
         self.button_frame.grid(row=1, column=1)
 
     def _initialize_directory_frame_elements(self):
         """Initializes the framework for the directory file explorer."""
-        self.directory_listbox = tk.Listbox(self.directory_frame, width=15, height=18)
-        self.directory_listbox.grid(row=0, column=0)
+        # Directory listbox
+        self.directory_listbox_label = tk.Label(self.directory_frame, text="Directory List")
+        self.directory_listbox_label.grid(row=0, column=0)
+        self.directory_listbox = tk.Listbox(self.directory_frame, width=15, height=9)
+        self.directory_listbox.grid(row=1, column=0)
+        # Separator
+        tkk.Separator(self.directory_frame, orient="horizontal").grid(row=2, sticky="ew", pady=3)
+        # File Listbox
+        self.file_listbox_label = tk.Label(self.directory_frame, text="File List")
+        self.file_listbox_label.grid(row=3, column=0)
+        self.file_listbox = tk.Listbox(self.directory_frame, width=15, height=9)
+        self.file_listbox.grid(row=4, column=0)
 
     def _initialize_button_frame_elements(self):
         """Initializes the framework for the button frames."""
@@ -86,8 +97,11 @@ class TextOrganizerGUI(tk.Tk):
         try:
             self.file_directory.read_file_list()
             # For each value in the file dictionary, append it to the file directory.
-            for file in self.file_directory.file_dict.values():
-                self.directory_listbox.insert("end", file)
+            directories, files = self.file_directory.get_file_values(errors="ignore") # Ignore errors for now, can handle when getting to file renaming.
+            for directory in directories:
+                self.directory_listbox.insert("end", directory)
+            for file in files:
+                self.file_listbox.insert("end", file)
         except InvalidDirectoryPath:
             tk.messagebox.showerror("Invalid Directory Path", "The previous directory could not be opened. Check if it has been renamed or removed.")
 
