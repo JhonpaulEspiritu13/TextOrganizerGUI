@@ -11,6 +11,8 @@
 * unmodified.       
 """
 
+# ================ File Directory
+
 class InvalidDirectoryFormat(Exception):
     """The given value is not a string."""
     pass
@@ -25,4 +27,10 @@ class NoDirectoryPath(Exception):
 
 class MissingFileError(Exception):
     """A file was missing from the directory path."""
+    pass
+
+# ================ GUI
+
+class OverSelectedListboxIndex(Exception):
+    """The given index was over the amount of listboxes in the program."""
     pass
