@@ -28,4 +28,4 @@ class PrefixName(Enum):
 class PrefixBase(Enum):
     """Prefix Enum that identifies the base character for each mode."""
     ALPHANUMERIC = "a"
-    NUMERIC = "#"
+    NUMERIC = "0"

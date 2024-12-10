@@ -12,6 +12,7 @@
 """
 
 # Imports
+import os
 import tkinter as tk
 import tkinter.ttk as tkk
 from tkinter import filedialog
@@ -77,7 +78,7 @@ class TextOrganizerGUI(tk.Tk):
     def _initialize_button_frame_elements(self):
         """Initializes the framework for the button frames."""
         # Prefix frame
-        self.button_prefix_frame = tk.LabelFrame(self.button_frame, width=125, height=150, text="Prefix Commands")
+        self.button_prefix_frame = tk.LabelFrame(self.button_frame, width=125, height=190, text="Prefix Commands")
         self.button_prefix_frame.grid_propagate(False)
         self.button_prefix_frame.grid(row=0)
         self._initialize_prefix_frame_buttons()
@@ -101,6 +102,13 @@ class TextOrganizerGUI(tk.Tk):
         self.button_prefix_frame_numer_button.grid(row=3)
         self.button_prefix_frame_custom_button = tk.Button(self.button_prefix_frame, text=f"Set Mode: {PrefixName.CUSTOM.value}", width=15, command=lambda: self._change_selected_prefix_mode(PrefixMode.CUSTOM))
         self.button_prefix_frame_custom_button.grid(row=4)
+        # Buttons for incrementing prefix mode.
+        self.button_prefix_frame_increment_frame = tk.LabelFrame(self.button_prefix_frame, width=125, height=50, text="Increment Prefixes")
+        self.button_prefix_frame_increment_frame.grid(row=5)
+        self.button_prefix_frame_plus_button = tk.Button(self.button_prefix_frame_increment_frame, text=f"+", width=7, command=self._increment_prefix_base)
+        self.button_prefix_frame_plus_button.grid(row=0, column=0)
+        self.button_prefix_frame_minus_button = tk.Button(self.button_prefix_frame_increment_frame, text=f"-", width=7, command=self._decrement_prefix_base)
+        self.button_prefix_frame_minus_button.grid(row=0, column=1)
 
 
     def _initialize_sort_frame_buttons(self):
@@ -125,6 +133,7 @@ class TextOrganizerGUI(tk.Tk):
         self.menu_bar_file.add_command(label="Open Directory", command=self.open_directory_dialog)
         self.menu_bar_file.add_separator()
         self.menu_bar_file.add_command(label="Refresh Directory", command=self.refresh_directory_files)
+        self.menu_bar_file.add_command(label="Save Directory", command=self.save_directory_files)
         self.menu_bar.add_cascade(label="Folder", menu=self.menu_bar_file)
 
     # ================ Properties
@@ -165,7 +174,6 @@ class TextOrganizerGUI(tk.Tk):
         self._change_selected_prefix_base(self._selected_prefix_mode)
         # Changes associated prefixes on labels.
         self.button_prefix_frame_current_prefix_label_1.configure(text=f"Mode: {PrefixName[self.selected_prefix_mode.name].value}")
-        self.button_prefix_frame_current_prefix_label_2.configure(text=f"Prefix: {self.selected_prefix_base}")
 
     @property
     def selected_prefix_base(self):
@@ -181,6 +189,8 @@ class TextOrganizerGUI(tk.Tk):
         if not isinstance(value, str):
             raise ValueError
         self._selected_prefix_base = value
+        # Changes associated label.
+        self.button_prefix_frame_current_prefix_label_2.configure(text=f"Prefix: {self.selected_prefix_base}")
 
     # ================ Private Functions
 
@@ -231,6 +241,56 @@ class TextOrganizerGUI(tk.Tk):
         else:
             # Otherwise choose the mode.
             self.selected_prefix_base = PrefixBase[self.selected_prefix_mode.name].value
+
+    def _increment_prefix_base(self) -> None:
+        """Increments the prefix base depending on mode.
+           Alphanumeric: a-z
+           Numeric: 0-9
+           Custom: None"""
+        old_prefix_base = self.selected_prefix_base
+        # (a-z) Alphanumeric Increment
+        if self.selected_prefix_mode == PrefixMode.ALPHANUMERIC:
+            if old_prefix_base == "z":
+                # Goes back to "a" if at the end
+                self.selected_prefix_base = "a"
+            else:
+                # Converts to the ascii value, increments by one, then reconverts it back to char.
+                self.selected_prefix_base = chr(ord(old_prefix_base) + 1)
+        # (0-9) Numeric increment
+        elif self.selected_prefix_mode == PrefixMode.NUMERIC:
+            old_prefix_base = int(old_prefix_base) # Convert to integer for checking
+            if old_prefix_base == 9:
+                # Goes back to 0 if at the end
+                self.selected_prefix_base = "0"
+            else:
+                # Back to string after incrementing
+                self.selected_prefix_base = str(old_prefix_base + 1)
+        # Nothing for customs or other modes. Would otherwise need to be added.
+
+    def _decrement_prefix_base(self) -> None:
+        """Decrements the prefix base depending on mode.
+           Alphanumeric: a-z
+           Numeric: 0-9
+           Custom: None"""
+        old_prefix_base = self.selected_prefix_base
+        # (a-z) Alphanumeric Decrement
+        if self.selected_prefix_mode == PrefixMode.ALPHANUMERIC:
+            if old_prefix_base == "a":
+                # Goes to "z" if at the start
+                self.selected_prefix_base = "z"
+            else:
+                # Converts to the ascii value, decrements by one, then reconverts it back to char.
+                self.selected_prefix_base = chr(ord(old_prefix_base) - 1)
+        # (0-9) Numeric Decrement
+        elif self.selected_prefix_mode == PrefixMode.NUMERIC:
+            old_prefix_base = int(old_prefix_base) # Convert to integer for checking
+            if old_prefix_base == 0:
+                # Goes back to 0 if at the end
+                self.selected_prefix_base = "9"
+            else:
+                # Back to string after incrementing
+                self.selected_prefix_base = str(old_prefix_base - 1)
+        # Nothing for customs or other modes. Would otherwise need to be added.
 
     def _prefix_all(self):
         """Add the current prefix to all elements."""
@@ -308,15 +368,6 @@ class TextOrganizerGUI(tk.Tk):
         except NoDirectoryPath:
             pass
 
-    def refresh_directory_files(self):
-        """Refreshes a selected directory."""
-        try:
-            self.open_directory_files()
-        except AttributeError:
-            # There is no directory to refresh.
-            tk.messagebox.showerror("No Directory Selected", "No directory has been selected to be refreshed.")
-            
-
     def open_directory_files(self):
         """Opens the directory and initializes them into a directory path list."""
         try:
@@ -331,6 +382,36 @@ class TextOrganizerGUI(tk.Tk):
             self._refresh_listboxes()
         except InvalidDirectoryPath:
             tk.messagebox.showerror("Invalid Directory Path", "The previous directory could not be opened. Check if it has been renamed or removed.")
+
+    def refresh_directory_files(self):
+        """Refreshes a selected directory."""
+        try:
+            self.open_directory_files()
+        except AttributeError:
+            # There is no directory to refresh.
+            tk.messagebox.showerror("No Directory Selected", "No directory has been selected to be refreshed.")
+
+    def save_directory_files(self):
+        """Saves any newly created items in listbox. Note: This handles the saving to file
+           paths since I thought it'd be better to reinitialize the file directory."""
+        try:
+            path = self.file_directory.directory_path
+            # Directory renaming
+            for key, value in self.dict_directories.items():
+                original_path = os.path.join(path, value)
+                new_path = os.path.join(path, key)
+                os.rename(original_path, new_path)
+
+            # File renaming
+            for key, value in self.dict_files.items():
+                original_path = os.path.join(path, value)
+                new_path = os.path.join(path, key)
+                os.rename(original_path, new_path)
+
+            # Refreshes after every file and directory is saved
+            self.open_directory_files()
+        except AttributeError:
+            tk.messagebox.showerror("No Directory Selected", "No directory has been selected to be saved to.")
         
 if __name__ == '__main__':
     new_gui = TextOrganizerGUI()
