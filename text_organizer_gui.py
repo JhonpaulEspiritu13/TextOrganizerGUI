@@ -49,9 +49,9 @@ class TextOrganizerGUI(tk.Tk):
         self.menu_bar = tk.Menu(self)
         self.config(menu=self.menu_bar)
         # Label Frames
-        self.directory_frame = tk.LabelFrame(self, width=200, height=320, text="File Explorer")
+        self.directory_frame = tk.LabelFrame(self, height=425, text="File Explorer")
         self.directory_frame.grid(row=1, column=0)
-        self.button_frame = tk.LabelFrame(self, width=130, height=355, text="Command List")
+        self.button_frame = tk.LabelFrame(self, width=130, height=460, text="Command List")
         self.button_frame.grid_propagate(False)
         self.button_frame.grid(row=1, column=1)
 
@@ -61,7 +61,7 @@ class TextOrganizerGUI(tk.Tk):
         # Directory listbox
         self.directory_listbox_label = tk.Label(self.directory_frame, text="Directory List")
         self.directory_listbox_label.grid(row=0, column=0)
-        self.directory_listbox = tk.Listbox(self.directory_frame, width=15, height=9, selectmode="extended", exportselection=False)
+        self.directory_listbox = tk.Listbox(self.directory_frame, width=20, height=12, selectmode="extended", exportselection=False)
         self.directory_listbox.grid(row=1, column=0)
         self.directory_listbox.bind("<<ListboxSelect>>", lambda event: self._change_selected_listbox_index(event, 0, "Directory"))
         self.listbox_list.append(self.directory_listbox)
@@ -70,7 +70,7 @@ class TextOrganizerGUI(tk.Tk):
         # File Listbox
         self.file_listbox_label = tk.Label(self.directory_frame, text="File List")
         self.file_listbox_label.grid(row=3, column=0)
-        self.file_listbox = tk.Listbox(self.directory_frame, width=15, height=9, selectmode="extended", exportselection=False)
+        self.file_listbox = tk.Listbox(self.directory_frame, width=20, height=12, selectmode="extended", exportselection=False)
         self.file_listbox.grid(row=4, column=0)
         self.file_listbox.bind("<<ListboxSelect>>", lambda event: self._change_selected_listbox_index(event, 1, "File"))
         self.listbox_list.append(self.file_listbox)
@@ -87,6 +87,11 @@ class TextOrganizerGUI(tk.Tk):
         self.button_sort_frame.grid_propagate(False)
         self.button_sort_frame.grid(row=1)
         self._initialize_sort_frame_buttons()
+        # Custom Prefix Frame
+        self.button_custom_frame = tk.LabelFrame(self.button_frame, width=125, height=130, text="Custom Prefix")
+        self.button_custom_frame.grid_propagate(False)
+        self.button_custom_frame.grid(row=2)
+        self._initialize_custom_frame_buttons()
 
     def _initialize_prefix_frame_buttons(self):
         """Initializes the button prefix frame buttons."""
@@ -119,12 +124,26 @@ class TextOrganizerGUI(tk.Tk):
         self.button_sort_frame_selected_listbox_textbox = tk.Text(self.button_sort_frame, width=10, height=1, state="disabled", bg="gray90")
         self.button_sort_frame_selected_listbox_textbox.grid(row=1)
         # Separator
-        tkk.Separator(self.directory_frame, orient="horizontal").grid(row=2, sticky="ew", pady=3)
+        tkk.Separator(self.button_sort_frame, orient="horizontal").grid(row=2, sticky="ew", pady=3)
         # Prefixing buttons, for actually adding prefixes to a listbox.
         self.button_sort_frame_prefix_all_button = tk.Button(self.button_sort_frame, text="Prefix All", width=15, command=self._prefix_all)
         self.button_sort_frame_prefix_some_button = tk.Button(self.button_sort_frame, text="Prefix Selected", width=15, command=self._prefix_selected)
-        self.button_sort_frame_prefix_all_button.grid(row=2)
-        self.button_sort_frame_prefix_some_button.grid(row=3)
+        self.button_sort_frame_prefix_all_button.grid(row=3)
+        self.button_sort_frame_prefix_some_button.grid(row=4)
+
+    def _initialize_custom_frame_buttons(self):
+        """Initializes the button custom prefix frame buttons."""
+        # Label and textbox
+        self.button_custom_frame_custom_prefix_label = tk.Label(self.button_custom_frame, justify=tk.LEFT, anchor="w", font="bold 10", text=" Type Valid Prefix:")
+        self.button_custom_frame_custom_prefix_label.grid(row=0)
+        self.button_custom_frame_custom_prefix_textbox = tk.Text(self.button_custom_frame, width=10, height=1)
+        self.button_custom_frame_custom_prefix_textbox.grid(row=1)
+        # Buttons
+        self.button_custom_frame_set_prefix_button = tk.Button(self.button_custom_frame, text="Set Custom Prefix", width=15, command=lambda: self._set_custom_prefix(self.button_custom_frame_custom_prefix_textbox.get("1.0","end-1c")))
+        self.button_custom_frame_save_prefix_button = tk.Button(self.button_custom_frame, text="Save Current Prefix", width=15, command=self._prefix_all)
+        self.button_custom_frame_set_prefix_button.grid(row=2)
+        tkk.Separator(self.button_custom_frame, orient="horizontal").grid(row=3, sticky="ew", pady=3)
+        self.button_custom_frame_save_prefix_button.grid(row=4)
 
     def _initialize_menu_bar_elements(self):
         """Initializes the elements for opening files/folders, closing files, etc."""
@@ -192,6 +211,31 @@ class TextOrganizerGUI(tk.Tk):
         # Changes associated label.
         self.button_prefix_frame_current_prefix_label_2.configure(text=f"Prefix: {self.selected_prefix_base}")
 
+    @property
+    def custom_prefix_actual(self):
+        """The actual custom prefix used when PrefixMode is set to CUSTOM."""
+        return self._custom_prefix_actual
+
+    @custom_prefix_actual.setter
+    def custom_prefix_actual(self, value):
+        """The actual custom prefix used when PrefixMode is set to CUSTOM
+        
+        :param value: Folder/File accessible string.
+        :raise ValueError: If the given value cannot be used in folders, raise ValueError."""
+        # Value is empty.
+        if not value:
+            raise ValueError
+        # Characters that cannot be used in folders.
+        folder_characters = set('[\\/*?:"<>|]')
+        # Iterates through each character in value, checking if they have the characters above.
+        # Probably not the most efficient way? But will get the job done for this project.
+        if any(char in value for char in folder_characters):
+            raise ValueError    
+        self._custom_prefix_actual = value
+        # Refresh prefix if set to custom.
+        if self.selected_prefix_mode == PrefixMode.CUSTOM:
+            self._change_selected_prefix_mode(PrefixMode.CUSTOM)
+
     # ================ Private Functions
 
     def _define_tkinter_properties(self):
@@ -236,8 +280,14 @@ class TextOrganizerGUI(tk.Tk):
         
         :param mode: The prefix mode that is currently set."""
         if mode == PrefixMode.CUSTOM:
-            # Show the custom prefix set.
-            self.selected_prefix_base = "Custom"
+            try:
+                # Show the custom prefix set.
+                self.selected_prefix_base = self.custom_prefix_actual
+            except AttributeError:
+                # Custom prefix has not been set yet.
+                tk.messagebox.showerror("No Prefix Set", "No custom prefix was set.\n\n Defaulting to Alphanumeric.")
+                # Default back to alphanumeric mode.
+                self._change_selected_prefix_mode(PrefixMode.ALPHANUMERIC)
         else:
             # Otherwise choose the mode.
             self.selected_prefix_base = PrefixBase[self.selected_prefix_mode.name].value
@@ -325,10 +375,19 @@ class TextOrganizerGUI(tk.Tk):
         self._sort_listboxes()
         self._refresh_listboxes()
 
+    def _set_custom_prefix(self, value):
+        """Sets the current custom prefix. Handles error with messagebox."""
+        try:
+            # Removes leading whitespaces, newlines and tab characters.
+            self.custom_prefix_actual = value.replace("\n", "").lstrip()
+        except ValueError:
+            tk.messagebox.showerror("Invalid Prefix", "A folder/file cannot be prefixed with this.")
+
     def _sort_listboxes(self):
         """Sorts the dictionaries."""
-        self.dict_directories = dict(sorted(self.dict_directories.items()))
-        self.dict_files = dict(sorted(self.dict_files.items()))
+        # Lambda function helps sorts by lower case key (Leaving them capital results in capital files having bigger priority.)
+        self.dict_directories = dict(sorted(self.dict_directories.items(), key=lambda i: i[0].lower()))
+        self.dict_files = dict(sorted(self.dict_files.items(), key=lambda i: i[0].lower()))
 
     def _refresh_listboxes(self):
         for listbox in self.listbox_list:
@@ -412,6 +471,8 @@ class TextOrganizerGUI(tk.Tk):
             self.open_directory_files()
         except AttributeError:
             tk.messagebox.showerror("No Directory Selected", "No directory has been selected to be saved to.")
+        except FileNotFoundError:
+            tk.messagebox.showerror("File not found.", "A file seems to have been deleted or renamed. Some files may have potentially been renamed, but processes have stopped.\n\nContents have not been refreshed.")
         
 if __name__ == '__main__':
     new_gui = TextOrganizerGUI()
