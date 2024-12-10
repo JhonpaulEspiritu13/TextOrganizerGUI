@@ -17,6 +17,7 @@ import tkinter as tk
 import tkinter.ttk as tkk
 from tkinter import filedialog
 # Classes
+from text_prefix_select_gui import TextPrefixSelectWindow
 from classes.exceptions import *
 from classes.enums import *
 from classes.file_directory import FileDirectory
@@ -140,7 +141,7 @@ class TextOrganizerGUI(tk.Tk):
         self.button_custom_frame_custom_prefix_textbox.grid(row=1)
         # Buttons
         self.button_custom_frame_set_prefix_button = tk.Button(self.button_custom_frame, text="Set Custom Prefix", width=15, command=lambda: self._set_custom_prefix(self.button_custom_frame_custom_prefix_textbox.get("1.0","end-1c")))
-        self.button_custom_frame_save_prefix_button = tk.Button(self.button_custom_frame, text="Save Current Prefix", width=15, command=self._prefix_all)
+        self.button_custom_frame_save_prefix_button = tk.Button(self.button_custom_frame, text="Save Current Prefix", width=15, command=lambda: self._save_custom_prefix(self.button_custom_frame_custom_prefix_textbox.get("1.0","end-1c")))
         self.button_custom_frame_set_prefix_button.grid(row=2)
         tkk.Separator(self.button_custom_frame, orient="horizontal").grid(row=3, sticky="ew", pady=3)
         self.button_custom_frame_save_prefix_button.grid(row=4)
@@ -153,7 +154,14 @@ class TextOrganizerGUI(tk.Tk):
         self.menu_bar_file.add_separator()
         self.menu_bar_file.add_command(label="Refresh Directory", command=self.refresh_directory_files)
         self.menu_bar_file.add_command(label="Save Directory", command=self.save_directory_files)
+        self.menu_bar_file.add_separator()
+        self.menu_bar_file.add_command(label="Close Program", command=self.destroy)
         self.menu_bar.add_cascade(label="Folder", menu=self.menu_bar_file)
+        # Prefix Tab
+        self.menu_bar_prefix = tk.Menu(self.menu_bar, tearoff=0)
+        self.menu_bar_prefix.add_command(label="Load Prefix", command=self._load_custom_prefix)
+        self.menu_bar_prefix.add_command(label="Save Prefix", command=lambda: self._save_custom_prefix(self.button_custom_frame_custom_prefix_textbox.get("1.0","end-1c")))
+        self.menu_bar.add_cascade(label="Prefixes", menu=self.menu_bar_prefix)
 
     # ================ Properties
 
@@ -254,6 +262,9 @@ class TextOrganizerGUI(tk.Tk):
         # Dictionary that holds the file values.
         self.dict_directories = {}
         self.dict_files = {}
+
+        # Constants used for reading/writing
+        self.PREFIX_FILE_NAME = "file_prefixes.txt"
 
     def _change_selected_listbox_index(self, event, index: int, name: str) -> None:
         """Bind function for listbox: Changes the value of the current
@@ -382,6 +393,43 @@ class TextOrganizerGUI(tk.Tk):
             self.custom_prefix_actual = value.replace("\n", "").lstrip()
         except ValueError:
             tk.messagebox.showerror("Invalid Prefix", "A folder/file cannot be prefixed with this.")
+
+    def _load_custom_prefix(self):
+        """Loads the prefixes folder and opens a window for user to select a prefix."""
+        try:
+            prefixes = []
+            # Attempts to open file
+            with open(self.PREFIX_FILE_NAME, 'r') as f:
+                for line in f.readlines():
+                    # Strips all newspaces and whitespaces from list.
+                    append_line = line.replace("\n", "").replace("\r", "").replace("\t", "").lstrip()
+                    # Reads each line in the file.
+                    if append_line: # Ensure it's not empty.
+                        prefixes.append(append_line)
+            # Ensures prefix list is not empty.
+            if not prefixes:
+                raise PrefixListEmptyException
+            prefix_select_window = TextPrefixSelectWindow(prefixes)
+            # After window is done running, set the custom prefix!
+            self._set_custom_prefix(prefix_select_window.selected_prefix)
+        except FileNotFoundError:
+            tk.messagebox.showerror("Prefix File Not Found", "Prefixes file not found. Ensure that you've created the file and that its placed in the correct directory.")
+        except PrefixListEmptyException:
+            tk.messagebox.showerror("Prefix File Empty", "The current prefix file list is empty. Please add new prefixes.")
+        except AttributeError:
+            pass
+
+    def _save_custom_prefix(self, value):
+        """Saves the current custom prefix to a file."""
+        # Tries to set the current prefix
+        try:
+            # Removes leading whitespaces, newlines and tab characters.
+            self.custom_prefix_actual = value.replace("\n", "").lstrip()
+            # Appends to end of file, writes a new file if it does not exist.
+            with open(self.PREFIX_FILE_NAME, 'a+') as f:
+                f.write(self.custom_prefix_actual + "\n")
+        except ValueError:
+            tk.messagebox.showerror("Invalid Prefix", "A folder/file cannot be prefixed with this. Not saved to file.")
 
     def _sort_listboxes(self):
         """Sorts the dictionaries."""

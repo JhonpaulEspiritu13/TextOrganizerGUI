@@ -34,3 +34,7 @@ class MissingFileError(Exception):
 class OverSelectedListboxIndex(Exception):
     """The given index was over the amount of listboxes in the program."""
     pass
+
+class PrefixListEmptyException(Exception):
+    """The prefix list was found to be empty"""
+    pass
